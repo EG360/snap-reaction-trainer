@@ -23,23 +23,26 @@ jobs:
           cordova platform add ios
           rm -rf www/*
           cp ../index.html www/
-          cp ../build.json ./
           cordova prepare ios
 
-      - name: Compile and Export Native iOS IPA Archive
+      - name: Compile App via Direct Architecture Build
         run: |
-          cd myApp
-          # Clear old Xcode caches to prevent module collision loops
+          cd myApp/platforms/ios
+          # Clear out Xcode caches to isolate compilation components perfectly
           rm -rf ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
           
-          # Run the official Cordova device compiler command
-          cordova build ios --device --debug --buildConfig=build.json
-          
-          # Bundle the cleanly packaged app artifact
-          cd platforms/ios/build/device
+          # Direct compilation targeted for devices that completely bypasses code signing and team verification blocks
+          xcodebuild -project "SnapTrainer.xcodeproj" -scheme "SnapTrainer" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
+
+      - name: Package App Bundle into Free IPA Archive
+        run: |
           mkdir -p Payload
-          cp -r *.app Payload/
-          zip -r ../../../../SnapTrainer.ipa Payload
+          
+          # Locate the cleanly generated app binary folder from the default build output path
+          cp -r myApp/platforms/ios/build/Debug-iphoneos/"SnapTrainer.app" Payload/
+          
+          # Compress folder payload structure directly into the target .ipa file
+          zip -r SnapTrainer.ipa Payload
 
       - name: Deliver Finished IPA File Archive
         uses: actions/upload-artifact@v4
