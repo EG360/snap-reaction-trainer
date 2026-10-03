@@ -13,25 +13,30 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Dependencies
-        run: |
-          npm install
-          npm run build
-          npx cap ios add || true
-          npx cap sync ios
+      - name: Install Cordova globally
+        run: npm install -g cordova
 
-      - name: Build Xcode Project
+      - name: Create Cordova App Shell
         run: |
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
+          cordova create myApp com.vibe.snaptrainer "SnapTrainer"
+          cd myApp
+          cordova platform add ios
+          rm -rf www/*
+          cp ../index.html www/
+          cordova prepare ios
 
-      - name: Package into IPA
+      - name: Compile Native iOS Application
+        run: |
+          cd myApp/platforms/ios
+          xcodebuild -project "SnapTrainer.xcodeproj" -scheme "SnapTrainer" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
+
+      - name: Package App Bundle into IPA Archive
         run: |
           mkdir -p Payload
-          cp -r ios/App/build/Debug-iphoneos/App.app Payload/
+          cp -r myApp/platforms/ios/build/Debug-iphoneos/"SnapTrainer.app" Payload/
           zip -r SnapTrainer.ipa Payload
 
-      - name: Upload Finished IPA
+      - name: Deliver Finished IPA File
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-ipa
