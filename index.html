@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snap: reaction trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --court:#2152DB; --court-2:#1A43BA; --line:#FFFFFF; --text:#FFFFFF;
+  --muted:rgba(255,255,255,.76); --pad:rgba(255,255,255,.13); --pad-edge:rgba(255,255,255,.28);
+  --ball:#E3F03A; --ink:#0C1A4D; --stop:#FF5B48; --alt:#8BE6FF;
+  --display:"Barlow Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --body:"Barlow","Helvetica Neue",Helvetica,Arial,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --court:#0F2672; --court-2:#0B1D5A; --pad:rgba(255,255,255,.09); --pad-edge:rgba(255,255,255,.22); }
+}
+:root[data-theme="dark"]{ --court:#0F2672; --court-2:#0B1D5A; --pad:rgba(255,255,255,.09); --pad-edge:rgba(255,255,255,.22); }
+
+*,*::before,*::after{ box-sizing:inherit; }
+html{ height:100%; scroll-padding-top:env(safe-area-inset-top,0px); }
+body{
+  height:100%; margin:0; background:var(--court); color:var(--text);
+  font-family:var(--body); font-size:17px; line-height:1.45;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation; overscroll-behavior:none;
+}
+button{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+button:focus-visible{ outline:3px solid var(--ball); outline-offset:3px; }
+[hidden]{ display:none !important; }
+
+.screen{ height:100%; max-width:520px; margin:0 auto; display:flex; flex-direction:column; padding:20px 20px 16px; overflow-y:auto; }
+
+/* Home */
+.home-head{ position:relative; padding:18px 0 22px; }
+.home-head::before{ /* centre-circle court marking */
+  content:""; position:absolute; right:-150px; top:-150px; width:340px; height:340px;
+  border:3px solid var(--line); border-radius:50%; opacity:.28; pointer-events:none;
+}
+h1{ font-family:var(--display); font-weight:700; font-size:92px; line-height:.86; letter-spacing:-.01em; margin:0 0 14px; }
+.lede{ margin:0; max-width:30ch; color:var(--muted); }
+.cta{
+  display:flex; flex-direction:column; align-items:flex-start; width:100%;
+  background:var(--ball); color:var(--ink); border-radius:20px; padding:18px 22px; margin:6px 0 0;
+  font-family:var(--display); font-weight:700; font-size:34px; line-height:1;
+}
+.btn.small{ font-size:22px; padding:13px 22px; margin:10px 0 24px; }
+.cta span{ font-family:var(--body); font-weight:500; font-size:15px; margin-top:6px; opacity:.8; }
+.cta:active{ transform:scale(.985); }
+h2{ font-family:var(--body); font-weight:600; font-size:15px; margin:0 0 4px; color:var(--muted); }
+.drills{ list-style:none; margin:0 0 14px; padding:0; border-top:2px solid var(--line); }
+.drills li{ border-bottom:2px solid var(--line); }
+.drill-row{ width:100%; display:grid; grid-template-columns:1fr auto; gap:2px 12px; text-align:left; padding:13px 2px; }
+.drill-row .n{ font-family:var(--display); font-weight:700; font-size:28px; line-height:1; }
+.drill-row .b{ font-family:var(--display); font-weight:600; font-size:24px; line-height:1; align-self:center; grid-row:span 2; color:var(--ball); }
+.drill-row .b.none{ color:var(--muted); font-family:var(--body); font-size:14px; font-weight:500; }
+.drill-row .w{ font-size:14px; color:var(--muted); }
+.foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:0 12px; margin-top:auto; padding-top:8px; }
+.link{ text-decoration:underline; text-underline-offset:4px; font-size:15px; padding:10px 0; }
+
+/* Intro and result */
+.center{ justify-content:center; }
+.step{ color:var(--muted); font-size:15px; margin:0 0 6px; }
+.big-name{ font-family:var(--display); font-weight:700; font-size:72px; line-height:.9; margin:0 0 16px; }
+.how{ font-size:20px; line-height:1.35; margin:0 0 10px; max-width:26ch; }
+.trains{ color:var(--muted); margin:0 0 30px; max-width:34ch; font-size:15px; }
+.btn{ background:var(--ball); color:var(--ink); border-radius:16px; padding:16px 22px; font-family:var(--display); font-weight:700; font-size:28px; line-height:1; width:100%; }
+.btn.ghost{ background:none; color:var(--text); border:2px solid var(--line); margin-top:10px; }
+.btn:active{ transform:scale(.985); }
+.figure{ font-family:var(--display); font-weight:700; font-size:120px; line-height:.85; margin:0; }
+.figure small{ font-size:36px; font-weight:600; margin-left:6px; }
+.tag{ display:inline-block; background:var(--ball); color:var(--ink); border-radius:999px; padding:3px 12px; font-weight:600; font-size:14px; margin:12px 0 0; }
+.best-line{ color:var(--muted); margin:12px 0 0; font-size:15px; }
+.stats{ list-style:none; padding:0; margin:20px 0 6px; border-top:2px solid var(--line); }
+.stats li{ display:flex; justify-content:space-between; gap:12px; padding:9px 2px; border-bottom:1px solid var(--pad-edge); font-size:16px; }
+.stats b{ font-weight:600; }
+.note{ color:var(--muted); font-size:15px; margin:10px 0 0; max-width:36ch; }
+.spark{ margin:14px 0 22px; color:var(--muted); font-size:13px; }
+.spark svg{ display:block; margin-bottom:2px; }
+.actions{ margin-top:auto; padding-top:18px; }
+
+/* Play */
+#play{ padding:10px 12px 12px; overflow:hidden; }
+.hud{ display:grid; grid-template-columns:auto 1fr auto auto; align-items:baseline; gap:14px; padding:4px 6px 8px; }
+.hud .quit{ font-size:15px; text-decoration:underline; text-underline-offset:4px; padding:8px 0; }
+.hud .name{ font-family:var(--display); font-weight:700; font-size:24px; }
+.hud .num{ font-family:var(--display); font-weight:600; font-size:24px; font-variant-numeric:tabular-nums; }
+.hud .num small{ font-family:var(--body); font-size:13px; font-weight:500; color:var(--muted); margin-left:3px; }
+.streak{ height:6px; border-radius:3px; background:var(--pad); margin:0 6px 10px; overflow:hidden; }
+.streak i{ display:block; height:100%; width:0; background:var(--ball); transition:width .15s; }
+.stage{ position:relative; flex:1; min-height:0; border:3px solid var(--line); border-radius:22px; background:var(--court-2); overflow:hidden; touch-action:none; }
+.fb{ position:absolute; left:0; right:0; top:14px; text-align:center; font-family:var(--display); font-weight:700; font-size:40px; line-height:1; pointer-events:none; opacity:0; z-index:5; }
+.fb.show{ animation:pop .75s ease-out; }
+.fb.bad{ color:var(--stop); }
+.fb.good{ color:var(--ball); }
+@keyframes pop{ 0%{opacity:0; transform:translateY(8px) scale(.9);} 15%{opacity:1; transform:none;} 70%{opacity:1;} 100%{opacity:0;} }
+
+/* Draw */
+.draw{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; }
+.disc{ width:min(62vw,280px); aspect-ratio:1; border-radius:50%; border:3px solid var(--line); }
+.disc.lit{ background:var(--ball); border-color:var(--ball); }
+.disc.foul{ border-color:var(--stop); }
+.hint{ margin:0; font-family:var(--display); font-weight:700; font-size:40px; line-height:1; min-height:40px; text-align:center; padding:0 12px; }
+
+/* Grid */
+.grid{ position:absolute; inset:60px 12px 12px; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:8px; }
+.pad{ border-radius:18px; background:var(--pad); border:2px solid var(--pad-edge); position:relative; }
+.pad.go{ background:var(--ball); border-color:var(--ball); }
+.pad.stop{ background:var(--stop); border-color:var(--stop); }
+.pad.stop::before,.pad.stop::after{ content:""; position:absolute; left:50%; top:50%; width:46%; height:7px; margin:-3.5px 0 0 -23%; background:var(--ink); border-radius:4px; transform:rotate(45deg); }
+.pad.stop::after{ transform:rotate(-45deg); }
+.pad.hit{ animation:hit .28s ease-out; }
+.pad.wrong{ animation:shake .25s; border-color:var(--stop); }
+@keyframes hit{ 0%{ box-shadow:0 0 0 0 rgba(255,255,255,.9);} 100%{ box-shadow:0 0 0 16px rgba(255,255,255,0);} }
+@keyframes shake{ 25%{ transform:translateX(-5px);} 75%{ transform:translateX(5px);} }
+
+/* Switch */
+.halves{ position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr; }
+.half{ display:flex; align-items:flex-end; justify-content:center; padding-bottom:26px; font-weight:600; color:var(--muted); }
+.half + .half{ border-left:3px solid var(--line); }
+.half.flash{ background:rgba(255,255,255,.14); }
+.half.err{ background:rgba(255,91,72,.28); }
+.cue{ position:absolute; left:50%; top:38%; width:150px; height:150px; margin:-75px 0 0 -75px; border-radius:50%; background:var(--court); border:3px solid var(--line); display:flex; align-items:center; justify-content:center; pointer-events:none; }
+.cue svg{ width:92px; height:62px; display:none; }
+.cue.on svg{ display:block; }
+.cue.left svg{ transform:scaleX(-1); }
+.cue path{ fill:var(--ball); stroke:var(--ball); stroke-width:6; stroke-linejoin:round; }
+.cue.anti path{ fill:none; stroke:var(--alt); }
+.cue .dot{ width:12px; height:12px; border-radius:50%; background:var(--line); }
+.cue.on .dot{ display:none; }
+
+/* Intercept */
+.strike{ position:absolute; left:0; right:0; height:3px; background:var(--line); }
+.ball{ position:absolute; left:0; top:0; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:var(--ball); will-change:transform; opacity:0; pointer-events:none; }
+.ball.ghost{ background:none; border:3px dashed var(--line); }
+
+/* Week strip */
+.week{ display:flex; align-items:center; gap:12px; margin:0 0 16px; }
+.week .sn{ font-family:var(--display); font-weight:700; font-size:56px; line-height:.85; }
+.week .st{ font-size:13px; line-height:1.25; color:var(--muted); margin-right:auto; max-width:12ch; }
+.week .dots{ display:flex; gap:7px; }
+.week .dot{ display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:var(--muted); }
+.week .dot i{ width:18px; height:18px; border-radius:50%; border:2px solid var(--line); opacity:.45; }
+.week .dot.today i{ opacity:1; }
+.week .dot.on i{ background:var(--ball); border-color:var(--ball); opacity:1; }
+.week .dot.today{ color:var(--text); font-weight:600; }
+dialog textarea{ width:100%; font:12px/1.4 ui-monospace,Menlo,Consolas,monospace; border:2px solid var(--ink); border-radius:12px; padding:10px; color:var(--ink); background:#F3F5FC; -webkit-user-select:text; user-select:text; resize:vertical; }
+dialog .btn.line{ background:none; color:var(--ink); border:2px solid var(--ink); font-size:22px; padding:12px 22px; }
+
+/* Progress */
+#progress > *{ flex:none; }
+.prog-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin:6px 0 16px; }
+.prog-head .big-name{ margin:0; }
+.chips{ display:flex; gap:8px; overflow-x:auto; margin:0 -20px 12px; padding:3px 20px; scrollbar-width:none; }
+.chips::-webkit-scrollbar{ display:none; }
+.chip{ flex:none; border:2px solid var(--line); border-radius:999px; padding:7px 15px; font-weight:600; font-size:15px; }
+.chip[aria-pressed="true"]{ background:var(--ball); border-color:var(--ball); color:var(--ink); }
+.seg{ display:grid; grid-template-columns:1fr 1fr; border:2px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:12px; }
+.seg button{ padding:10px; font-weight:600; font-size:15px; }
+.seg button[aria-pressed="true"]{ background:var(--line); color:var(--court-2); }
+.count{ color:var(--muted); font-size:14px; margin:0 2px 12px; }
+.card{ background:var(--court-2); border:2px solid var(--pad-edge); border-radius:22px; padding:16px 14px 10px; margin-bottom:14px; }
+.card-top{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:0 4px; }
+.card h3{ font-family:var(--body); font-weight:600; font-size:15px; color:var(--muted); margin:0 0 6px; }
+.card .val{ font-family:var(--display); font-weight:700; font-size:58px; line-height:.86; margin:0; font-variant-numeric:tabular-nums; }
+.card .val small{ font-size:22px; font-weight:600; margin-left:4px; }
+.card .cap{ font-size:13px; color:var(--muted); margin:6px 0 0; }
+.card .trend{ text-align:right; font-size:13px; color:var(--muted); margin:0; max-width:17ch; }
+.card .trend b{ display:block; font-family:var(--display); font-weight:700; font-size:24px; line-height:1.05; color:var(--text); }
+.card .trend b.up{ color:var(--ball); }
+.chart{ display:block; width:100%; height:auto; margin-top:10px; overflow:visible; }
+.chart text{ font-family:var(--body); font-size:11px; fill:var(--muted); }
+.chart .gl{ stroke:var(--pad-edge); stroke-width:1; }
+.chart .run{ fill:var(--text); opacity:.32; }
+.chart .ln{ fill:none; stroke-width:2.5; stroke-linejoin:round; stroke-linecap:round; }
+.chart .tr{ stroke:var(--ball); stroke-width:2; stroke-dasharray:6 6; stroke-linecap:round; }
+.chart .now{ fill:var(--ball); stroke:var(--court-2); stroke-width:3; }
+.legend{ display:flex; gap:6px 16px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); padding:6px 4px 4px; }
+.legend i{ display:inline-block; width:18px; height:0; border-top:2.5px solid var(--text); vertical-align:middle; margin-right:6px; }
+.legend i.t{ border-top:2px dashed var(--ball); }
+.legend i.d{ width:6px; height:6px; border:0; border-radius:50%; background:var(--text); opacity:.4; }
+.empty{ padding:8px 4px 10px; }
+.empty p{ margin:0 0 14px; max-width:32ch; }
+
+/* Sheet */
+dialog{ border:0; border-radius:22px; padding:22px; max-width:min(92vw,460px); max-height:86%; background:#fff; color:var(--ink); font-size:16px; }
+dialog::backdrop{ background:rgba(6,14,48,.6); }
+dialog h3{ font-family:var(--display); font-weight:700; font-size:34px; line-height:1; margin:0 0 12px; }
+dialog h4{ font-size:16px; margin:16px 0 4px; }
+dialog p{ margin:0 0 10px; }
+dialog ul{ margin:0 0 10px; padding-left:20px; }
+dialog li{ margin-bottom:6px; }
+dialog .btn{ background:var(--ink); color:#fff; margin-top:8px; }
+dialog .src{ font-size:13.5px; opacity:.75; }
+
+@media (max-height:640px){ h1{ font-size:70px; } .figure{ font-size:92px; } .big-name{ font-size:56px; } }
+@media (prefers-reduced-motion:reduce){ .fb.show,.pad.hit,.pad.wrong{ animation-duration:.01s; } .streak i{ transition:none; } }
+</style>
+</head>
+<body>
+
+<main id="home" class="screen">
+  <header class="home-head">
+    <h1>Snap</h1>
+    <p class="lede">Short drills for the parts of reacting you can get faster at: choosing, holding back, and reading where a ball is going.</p>
+  </header>
+  <div class="week" id="week"></div>
+  <button class="cta" id="startCircuit">Start the circuit<span>6 drills, about 5 minutes</span></button>
+  <button class="btn ghost small" id="startQuick">Quick three, about 2 minutes</button>
+  <h2>Or play one drill</h2>
+  <ul class="drills" id="drillList"></ul>
+  <button class="btn ghost" id="openProgress" style="margin:0 0 6px">See your progress</button>
+  <div class="foot">
+    <button class="link" id="openWhy">Why these drills</button>
+    <button class="link" id="mute">Sound on</button>
+    <button class="link" id="openData">Your data</button>
+  </div>
+</main>
+
+<main id="intro" class="screen center" hidden>
+  <p class="step" id="introStep"></p>
+  <p class="big-name" id="introName"></p>
+  <p class="how" id="introHow"></p>
+  <p class="trains" id="introTrains"></p>
+  <button class="btn" id="introGo">Start drill</button>
+  <button class="btn ghost" id="introBack">Back to drills</button>
+</main>
+
+<main id="play" class="screen" hidden>
+  <div class="hud">
+    <button class="quit" id="quit">Quit</button>
+    <span class="name" id="hudName"></span>
+    <span class="num" id="hudTrial"></span>
+    <span class="num"><span id="hudScore">0</span><small>pts</small></span>
+  </div>
+  <div class="streak" aria-hidden="true"><i id="streakBar"></i></div>
+  <div class="stage" id="stage" aria-label="Game area"></div>
+</main>
+
+<main id="result" class="screen" hidden>
+  <p class="step" id="resName"></p>
+  <p class="figure" id="resFigure"></p>
+  <div id="resBest"></div>
+  <ul class="stats" id="resStats"></ul>
+  <p class="note" id="resNote"></p>
+  <div class="spark" id="resSpark"></div>
+  <div class="actions">
+    <button class="btn" id="resNext">Next drill</button>
+    <button class="btn ghost" id="resAgain">Play this drill again</button>
+  </div>
+</main>
+
+<main id="summary" class="screen" hidden>
+  <p class="step">Session complete</p>
+  <p class="figure" id="sumScore"></p>
+  <ul class="stats" id="sumStats"></ul>
+  <p class="note">Each number is your median, so one lucky tap can't inflate it. Lower is faster.</p>
+  <div class="actions">
+    <button class="btn" id="sumAgain">Go again</button>
+    <button class="btn ghost" id="sumHome">Back to drills</button>
+  </div>
+</main>
+
+<main id="progress" class="screen" hidden>
+  <div class="prog-head">
+    <p class="big-name">Progress</p>
+    <button class="link" id="progBack">Back to drills</button>
+  </div>
+  <div class="chips" id="progChips" role="group" aria-label="Drill"></div>
+  <div class="seg" role="group" aria-label="Time range">
+    <button id="r7" aria-pressed="true">Past 7 days</button>
+    <button id="rAll" aria-pressed="false">All time</button>
+  </div>
+  <p class="count" id="progCount"></p>
+  <div id="progCards"></div>
+</main>
+
+<dialog id="why">
+  <h3>Why these drills</h3>
+  <p>Reacting is a chain: notice, decide, move. The links respond to practice differently, so each drill works one of them.</p>
+  <ul>
+    <li><b>Draw</b> is the benchmark. Pure see-it-tap-it speed has the least room to improve, so it gets eight taps and no more. The wait is random so you can't time it.</li>
+    <li><b>Lights</b> adds a choice among nine places. Decision time is where most of the trainable milliseconds are.</li>
+    <li><b>Stop light</b> adds holding back. Getting faster only counts if you don't also get trigger-happy.</li>
+    <li><b>Switch</b> adds a rule that sometimes flips, so you practise deciding under conflict.</li>
+    <li><b>Intercept</b> hides the ball mid-flight. People who look fast in sport are mostly predicting, and this is practice at predicting.</li>
+    <li><b>Strobe</b> shows the ball only in short glimpses. It borrows the idea behind strobe-glasses training, the method with the most recent support for reaction time. A flickering screen is an approximation of that, not the tested method.</li>
+  </ul>
+  <h4>How it adapts</h4>
+  <p>Each hit shortens the time you're allowed by 4%. Each miss lengthens it by 18%. That settles where you succeed about four times in five, which keeps you at the edge of what you can do. Each drill remembers where you finished and starts the next run just below it. A personal best only counts when accuracy is 80% or better.</p>
+  <h4>What it won't do</h4>
+  <p>Screen drills reliably make you better at screen drills and at similar tasks. Reviews have not found good evidence that this carries over to performance in a sport. Use it as a sharpener and a self-test alongside real practice.</p>
+  <p>Phones add their own touch and display delay, so your times here will run slower than a lab figure. Compare yourself with yourself, on the same device.</p>
+  <p class="src">Sources: Dye, Green and Bavelier, Current Directions in Psychological Science, 2009. Bediou et al., Psychological Bulletin, 2018. Hilgard et al., Collabra: Psychology, 2019. Fransen, Sports Medicine, 2024. Stroboscopic training meta-analysis, Frontiers in Psychology, 2025.</p>
+  <button class="btn" id="closeWhy">Close</button>
+</dialog>
+
+<dialog id="dataSheet">
+  <h3>Your data</h3>
+  <p>Scores live in this browser only. Clearing site data or switching phones loses them. Copy the text below somewhere safe as a backup, or paste a backup here and restore it.</p>
+  <textarea id="dataText" rows="5" spellcheck="false" aria-label="Backup text"></textarea>
+  <p id="dataMsg" class="src" role="status"></p>
+  <button class="btn" id="dataCopy">Copy backup</button>
+  <button class="btn line" id="dataRestore">Restore from this text</button>
+  <button class="btn line" id="dataErase">Erase all scores</button>
+  <button class="btn line" id="dataClose">Close</button>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s){ return document.querySelector(s); };
+var now = function(){ return performance.now(); };
+var rand = function(a,b){ return a + Math.random()*(b-a); };
+var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+function median(a){ if(!a.length) return null; var s=a.slice().sort(function(x,y){return x-y;}); var m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+var DRILLS = [
+  { id:'draw', name:'Draw', trials:8,
+    how:'Wait for the circle to turn yellow, then tap anywhere. Tap early and it is a false start.',
+    trains:'Benchmark: raw reaction, with a random wait so you cannot time it.', short:'Raw reaction benchmark' },
+  { id:'lights', name:'Lights', trials:24,
+    how:'Tap the pad that lights up. The time you get shrinks as you hit.',
+    trains:'Choice speed: finding and hitting one target among nine.', short:'Choosing among nine targets' },
+  { id:'stop', name:'Stop light', trials:26,
+    how:'Yellow pad: tap it. Red pad with a cross: leave it alone.',
+    trains:'Holding back: staying fast without tapping the wrong thing.', short:'Fast, without false moves' },
+  { id:'switch', name:'Switch', trials:24,
+    how:'Solid yellow arrow: tap the side it points to. Hollow blue arrow: tap the opposite side.',
+    trains:'Deciding under conflict when the rule flips.', short:'Deciding when the rule flips' },
+  { id:'intercept', name:'Intercept', trials:10,
+    how:'The ball drops, then disappears. Tap at the moment it would reach the line.',
+    trains:'Anticipation: timing a ball from the early part of its flight.', short:'Timing a ball you cannot see' },
+  { id:'strobe', name:'Strobe', trials:10,
+    how:'The ball flickers in and out as it drops. Tap at the moment it reaches the line.',
+    trains:'Tracking with gaps: building the flight from short glimpses.', short:'Timing from short glimpses' }
+];
+var TIMING={ intercept:1, strobe:1 };
+var byId = {}; DRILLS.forEach(function(d){ byId[d.id]=d; });
+
+/* ---------- storage (per-device convenience only) ---------- */
+var KEY='snap.v1';
+var DATA={ best:{}, hist:{}, log:{}, lvl:{}, days:{}, last:{}, mute:false };
+function applyData(raw){
+  if(!raw || typeof raw!=='object' || Array.isArray(raw)) return false;
+  var o=function(v){ return (v && typeof v==='object' && !Array.isArray(v)) ? v : {}; };
+  DATA.best=o(raw.best); DATA.hist=o(raw.hist); DATA.log=o(raw.log); DATA.lvl=o(raw.lvl); DATA.days=o(raw.days); DATA.last=o(raw.last); DATA.mute=!!raw.mute;
+  Object.keys(DATA.log).forEach(function(id){   /* older saves: rebuild trained days from the run log */
+    if(!Array.isArray(DATA.log[id])){ DATA.log[id]=[]; return; }
+    DATA.log[id].forEach(function(r){ var k=dayStart(r.t); if(!DATA.days[k]) DATA.days[k]=1; if(!DATA.last[id] || r.t>DATA.last[id]) DATA.last[id]=r.t; });
+  });
+  return true;
+}
+try{ applyData(JSON.parse(localStorage.getItem(KEY))); }catch(e){}
+function startLevel(id, def, min, max, ease){ var v=DATA.lvl[id]; return (typeof v==='number' && isFinite(v)) ? Math.max(min,Math.min(max,v*ease)) : def; }
+function prevDay(ts){ return dayStart(ts-43200000); }
+function streakDays(){ var cur=dayStart(Date.now()), n=0; if(!DATA.days[cur]) cur=prevDay(cur); while(DATA.days[cur]){ n++; cur=prevDay(cur); } return n; }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DATA)); }catch(e){} }
+
+/* ---------- sound and haptics ---------- */
+var AC=null;
+function audio(){ if(DATA.mute) return null; if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } } if(AC && AC.state==='suspended'){ AC.resume(); } return AC; }
+function sfx(kind){
+  var ac=audio(); if(!ac) return;
+  try{
+    var o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime;
+    o.type = kind==='bad' ? 'square' : 'sine';
+    o.frequency.value = kind==='bad' ? 150 : (kind==='best' ? 1175 : 880);
+    var dur = kind==='bad' ? .16 : .07;
+    g.gain.setValueAtTime(kind==='bad'?.08:.14, t); g.gain.exponentialRampToValueAtTime(.001, t+dur);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur);
+  }catch(e){}
+}
+function buzz(ms){ if(!DATA.mute && navigator.vibrate){ try{ navigator.vibrate(ms); }catch(e){} } }
+
+/* ---------- screens ---------- */
+var SCREENS=['home','intro','play','result','summary','progress'];
+function show(id){ SCREENS.forEach(function(s){ $('#'+s).hidden = (s!==id); }); }
+function fmt(id,v){ return (TIMING[id] ? '\u00B1' : '') + Math.round(v) + ' ms'; }
+
+function renderHome(){
+  var ul=$('#drillList'); ul.innerHTML='';
+  DRILLS.forEach(function(d){
+    var li=document.createElement('li'), b=document.createElement('button');
+    b.className='drill-row';
+    var best=DATA.best[d.id];
+    b.innerHTML='<span class="n"></span><span class="b"></span><span class="w"></span>';
+    b.children[0].textContent=d.name;
+    b.children[1].textContent = best!=null ? fmt(d.id,best) : 'No best yet';
+    if(best==null) b.children[1].classList.add('none');
+    b.children[2].textContent=d.short;
+    b.addEventListener('click', function(){ audio(); startQueue([d.id], false); });
+    li.appendChild(b); ul.appendChild(li);
+  });
+  $('#mute').textContent = DATA.mute ? 'Sound off' : 'Sound on';
+  var today=dayStart(Date.now()), n=streakDays(), cells=[], cur=today;
+  for(var i=0;i<7;i++){ cells.unshift(cur); cur=prevDay(cur); }
+  var html='<span class="sn">'+n+'</span><span class="st">day streak. '+(DATA.days[today] ? 'Trained today.' : (n ? 'Train today to keep it.' : 'One drill starts it.'))+'</span><span class="dots">';
+  cells.forEach(function(ts){
+    html+='<span class="dot'+(DATA.days[ts]?' on':'')+(ts===today?' today':'')+'"><i></i>'+new Date(ts+43200000).toLocaleDateString(undefined,{ weekday:'narrow' })+'</span>';
+  });
+  $('#week').innerHTML=html+'</span>';
+}
+
+/* ---------- flow ---------- */
+var queue=[], pos=0, circuit=false, session=[], mode='single';
+function startQueue(ids, isCircuit, m){ queue=ids; pos=0; circuit=isCircuit; mode=m||'single'; session=[]; showIntro(); }
+function allIds(){ return DRILLS.map(function(d){ return d.id; }); }
+/* the three drills you have gone longest without playing */
+function quickIds(){
+  var pick=DRILLS.slice().sort(function(a,b){ return (DATA.last[a.id]||0)-(DATA.last[b.id]||0); }).slice(0,3).map(function(d){ return d.id; });
+  return allIds().filter(function(id){ return pick.indexOf(id)>=0; });
+}
+function showIntro(){
+  var d=byId[queue[pos]];
+  $('#introStep').textContent = circuit ? ((mode==='quick'?'Quick three, drill ':'Drill ')+(pos+1)+' of '+queue.length) : 'Single drill';
+  $('#introName').textContent=d.name;
+  $('#introHow').textContent=d.how;
+  $('#introTrains').textContent=d.trains;
+  show('intro');
+}
+
+/* ---------- engine ---------- */
+var stage=$('#stage');
+var runTok=0, tapResolver=null, rafId=0;
+var S={ score:0, streak:0 };
+
+function stamp(e){ var t=e.timeStamp, n=now(); return (t>0 && t<=n && n-t<400) ? t : n; }
+stage.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  if(tapResolver){ var r=tapResolver; tapResolver=null; r({ t:stamp(e), target:e.target, x:e.clientX, y:e.clientY }); }
+});
+stage.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+function nextTap(timeout){
+  return new Promise(function(res){
+    var done=false;
+    var wrap=function(v){ if(done) return; done=true; clearTimeout(to); res(v); };
+    var to=setTimeout(function(){ if(done) return; done=true; if(tapResolver===wrap) tapResolver=null; res(null); }, timeout);
+    tapResolver=wrap;
+  });
+}
+/* change the screen, then report the time of the frame that shows it */
+function paintOnset(fn){
+  return new Promise(function(res){
+    requestAnimationFrame(function(){ fn(); requestAnimationFrame(function(t){ res(t); }); });
+  });
+}
+function setTrial(i,n){ $('#hudTrial').textContent=(i+1)+'/'+n; }
+function hud(){ $('#hudScore').textContent=S.score; $('#streakBar').style.width=((S.streak>0 && S.streak%5===0) ? 100 : (S.streak%5)*20)+'%'; }
+function award(rt){ S.streak++; var mult=Math.min(3, 1+Math.floor(S.streak/5)*.5); S.score+=Math.round(Math.max(20,(1000-rt)/5)*mult); hud(); sfx('good'); buzz(8); }
+function fault(){ S.streak=0; S.score=Math.max(0,S.score-50); hud(); sfx('bad'); buzz(40); }
+function pop(text, cls){
+  var fb=$('#fb'); if(!fb) return;
+  fb.textContent=text; fb.className='fb '+(cls||''); void fb.offsetWidth; fb.classList.add('show');
+}
+function stopRun(){ runTok++; tapResolver=null; if(rafId){ cancelAnimationFrame(rafId); rafId=0; } }
+
+async function play(){
+  var d=byId[queue[pos]];
+  stopRun(); var tok=runTok;
+  S.score=0; S.streak=0; hud();
+  $('#hudName').textContent=d.name; setTrial(0,d.trials);
+  stage.innerHTML='';
+  show('play');
+  await sleep(500); if(tok!==runTok) return;
+  var out = await RUN[d.id](tok,d);
+  if(tok!==runTok || !out) return;
+  await sleep(500); if(tok!==runTok) return;
+  finish(d,out);
+}
+
+var RUN={};
+
+/* Draw: simple reaction, random foreperiod, false starts caught */
+RUN.draw = async function(tok,d){
+  stage.innerHTML='<div class="draw"><div class="disc" id="disc"></div><p class="hint" id="hint">Wait for yellow</p></div>';
+  var disc=$('#disc'), hint=$('#hint'), R=[], fs=0, i=0;
+  while(i<d.trials){
+    setTrial(i,d.trials); disc.className='disc'; hint.textContent='Wait for yellow';
+    var early=await nextTap(rand(1300,3600)); if(tok!==runTok) return null;
+    if(early){
+      fs++; fault(); disc.classList.add('foul'); hint.textContent='Too soon';
+      await sleep(1000); if(tok!==runTok) return null;
+      if(fs>6){ R.push({ok:false}); i++; }
+      continue;
+    }
+    var onset=await paintOnset(function(){ disc.classList.add('lit'); }); if(tok!==runTok) return null;
+    var tap=await nextTap(1500); if(tok!==runTok) return null;
+    disc.classList.remove('lit');
+    if(!tap){ fault(); hint.textContent='Missed it'; R.push({ok:false}); i++; }
+    else{
+      var rt=tap.t-onset;
+      if(rt<100){ fs++; fault(); disc.classList.add('foul'); hint.textContent='That was a guess'; if(fs>6){ R.push({ok:false}); i++; } }
+      else{ award(rt); hint.textContent=Math.round(rt)+' ms'; R.push({ok:true,rt:rt}); i++; }
+    }
+    await sleep(750); if(tok!==runTok) return null;
+  }
+  return { R:R, falseStarts:fs };
+};
+
+/* Lights and Stop light: 3x3 grid, adaptive response window */
+async function runGrid(tok,d,withStop){
+  var html='<div class="fb" id="fb"></div><div class="grid">';
+  for(var p=0;p<9;p++) html+='<div class="pad" data-i="'+p+'"></div>';
+  stage.innerHTML=html+'</div>';
+  var pads=[].slice.call(stage.querySelectorAll('.pad'));
+  var R=[], last=-1, MIN=260, MAX=1300, dl=startLevel(d.id,900,MIN,MAX,1.15);
+  var plan=[]; 
+  if(withStop){
+    var nStop=Math.round(d.trials*.3), rest=[];
+    for(var q=0;q<d.trials-2;q++) rest.push(q<nStop);
+    plan=[false,false].concat(shuffle(rest));
+  }
+  for(var i=0;i<d.trials;i++){
+    setTrial(i,d.trials);
+    await sleep(rand(450,1000)); if(tok!==runTok) return null;
+    var k; do{ k=Math.floor(Math.random()*9); }while(k===last); last=k;
+    var nogo = withStop && plan[i];
+    var pad=pads[k];
+    var onset=await paintOnset(function(){ pad.classList.add(nogo?'stop':'go'); }); if(tok!==runTok) return null;
+    var tap=await nextTap(nogo ? Math.min(Math.max(dl,450),750) : dl); if(tok!==runTok) return null;
+    pad.classList.remove('go','stop');
+    if(nogo){
+      if(tap){ fault(); pop('Leave red alone','bad'); pad.classList.add('wrong'); R.push({kind:'nogo',ok:false}); dl=Math.min(MAX,dl*1.18); }
+      else{ S.streak++; S.score+=40; hud(); R.push({kind:'nogo',ok:true}); }
+    }else if(!tap){
+      fault(); pop('Too slow','bad'); R.push({kind:'go',ok:false}); dl=Math.min(MAX,dl*1.18);
+    }else{
+      var hit = tap.target===pad, rt=tap.t-onset;
+      if(hit && rt>=120){ award(rt); pop(Math.round(rt)+' ms','good'); pad.classList.add('hit'); R.push({kind:'go',ok:true,rt:rt}); dl=Math.max(MIN,dl*.96); }
+      else{ fault(); pop(hit?'That was a guess':'Wrong pad','bad'); pad.classList.add('wrong'); R.push({kind:'go',ok:false}); dl=Math.min(MAX,dl*1.18); }
+    }
+    (function(el){ setTimeout(function(){ el.classList.remove('hit','wrong'); }, 300); })(pad);
+  }
+  return { R:R, window:dl };
+}
+RUN.lights=function(tok,d){ return runGrid(tok,d,false); };
+RUN.stop=function(tok,d){ return runGrid(tok,d,true); };
+
+/* Switch: rule-based choice with a minority of reversed trials */
+RUN.switch = async function(tok,d){
+  stage.innerHTML='<div class="fb" id="fb"></div><div class="halves"><div class="half" id="hL">Left</div><div class="half" id="hR">Right</div></div>'+
+    '<div class="cue" id="cue"><span class="dot"></span><svg viewBox="0 0 120 80" aria-hidden="true"><path d="M8 30 H70 V10 L112 40 L70 70 V50 H8 Z"/></svg></div>';
+  var cue=$('#cue'), hL=$('#hL'), hR=$('#hR'), R=[], MIN=330, MAX=1600, dl=startLevel('switch',1100,MIN,MAX,1.15);
+  var nAnti=Math.round(d.trials*.4), plan=[];
+  for(var q=0;q<d.trials-2;q++) plan.push(q<nAnti);
+  plan=[false,false].concat(shuffle(plan));
+  for(var i=0;i<d.trials;i++){
+    setTrial(i,d.trials);
+    cue.className='cue';
+    await sleep(rand(550,1100)); if(tok!==runTok) return null;
+    var right=Math.random()<.5, anti=plan[i];
+    var onset=await paintOnset(function(){ cue.className='cue on'+(right?'':' left')+(anti?' anti':''); }); if(tok!==runTok) return null;
+    var tap=await nextTap(dl); if(tok!==runTok) return null;
+    cue.className='cue';
+    var want = anti ? !right : right;
+    if(!tap){ fault(); pop('Too slow','bad'); R.push({anti:anti,ok:false}); dl=Math.min(MAX,dl*1.18); continue; }
+    var box=stage.getBoundingClientRect(), wentRight = tap.x > box.left+box.width/2, rt=tap.t-onset;
+    var half = wentRight ? hR : hL;
+    if(wentRight===want && rt>=120){ award(rt); pop(Math.round(rt)+' ms','good'); half.classList.add('flash'); R.push({anti:anti,ok:true,rt:rt}); dl=Math.max(MIN,dl*.96); }
+    else{ fault(); pop(anti?'Hollow means opposite':'Wrong side','bad'); half.classList.add('err'); R.push({anti:anti,ok:false}); dl=Math.min(MAX,dl*1.18); }
+    (function(el){ setTimeout(function(){ el.classList.remove('flash','err'); }, 220); })(half);
+  }
+  return { R:R, window:dl };
+};
+
+/* Intercept: coincidence timing with the last part of the flight hidden */
+async function runBall(tok,d,strobe){
+  stage.innerHTML='<div class="fb" id="fb"></div><div class="strike" id="strike"></div><div class="ball ghost" id="ghost"></div><div class="ball" id="ball"></div>';
+  var ball=$('#ball'), ghost=$('#ghost'), strike=$('#strike');
+  var W=stage.clientWidth, H=stage.clientHeight, lineY=Math.round(H*.8), startY=70;
+  strike.style.top=lineY+'px';
+  /* vis = share of flight shown (Intercept) or glimpse length in ms out of every 220 (Strobe) */
+  var R=[], vis = strobe ? startLevel(d.id,90,30,140,1.15) : startLevel(d.id,.72,.3,.85,1.08);
+  var easier=function(){ vis = strobe ? Math.min(140,vis+10) : Math.min(.85,vis+.06); };
+  var harder=function(){ vis = strobe ? Math.max(30,vis-10) : Math.max(.3,vis-.06); };
+  function place(el,x,y){ el.style.transform='translate('+x+'px,'+y+'px)'; }
+  for(var i=0;i<d.trials;i++){
+    setTrial(i,d.trials);
+    ghost.style.opacity=0; ball.style.opacity=0;
+    await sleep(rand(700,1300)); if(tok!==runTok) return null;
+    var T=rand(900,1700), x0=rand(.15,.85)*W, x1=rand(.15,.85)*W, t0=null, shownVis=vis;
+    var posAt=function(p){ return [x0+(x1-x0)*p, startY+(lineY-startY)*p]; };
+    var frame=function(t){
+      if(t0===null){ t0=t; }
+      var p=(t-t0)/T, xy=posAt(Math.min(p,1.4));
+      place(ball,xy[0],xy[1]);
+      ball.style.opacity = (strobe ? (p<.85 && ((t-t0)%220)<shownVis) : p<shownVis) ? 1 : 0;
+      if(p<1.6) rafId=requestAnimationFrame(frame);
+    };
+    rafId=requestAnimationFrame(frame);
+    var tap=await nextTap(T+800); if(tok!==runTok) return null;
+    cancelAnimationFrame(rafId); rafId=0;
+    if(!tap || t0===null){
+      fault(); pop('No tap','bad'); R.push({ok:false}); easier();
+    }else{
+      var err=tap.t-(t0+T), a=Math.abs(err);
+      var pTap=Math.max(0,Math.min(1.4,(tap.t-t0)/T)), xy=posAt(pTap), end=posAt(1);
+      place(ball,xy[0],xy[1]); ball.style.opacity=1;       /* where the ball really was */
+      place(ghost,end[0],end[1]); ghost.style.opacity=1;   /* where it meets the line */
+      R.push({ok:true,err:err});
+      if(a<=60){ S.streak++; } else { S.streak=0; }
+      S.score+=Math.max(0,Math.round(250-a*2)); hud();
+      if(a<=25){ pop('Dead on','good'); sfx('best'); buzz(10); }
+      else{ pop(Math.round(a)+' ms '+(err<0?'early':'late'), a<=60?'good':'bad'); sfx(a<=60?'good':'bad'); }
+      if(a<=50) harder(); else if(a>110) easier();
+    }
+    await sleep(900); if(tok!==runTok) return null;
+  }
+  return { R:R, vis:vis };
+}
+RUN.intercept=function(tok,d){ return runBall(tok,d,false); };
+RUN.strobe=function(tok,d){ return runBall(tok,d,true); };
+
+/* ---------- scoring a drill ---------- */
+function summarize(id,out){
+  var R=out.R, ok=R.filter(function(r){ return r.ok; }), n=R.length, lines=[], primary=null, valid=true, why='';
+  var pct=function(a,b){ return b ? Math.round(100*a/b)+'%' : 'n/a'; };
+  if(id==='draw'){
+    var rts=ok.map(function(r){ return r.rt; }); primary=median(rts); valid=rts.length>=5;
+    if(rts.length) lines.push(['Fastest', Math.round(Math.min.apply(null,rts))+' ms']);
+    lines.push(['False starts', String(out.falseStarts)]);
+    why='Fewer than five clean taps, so this run does not count toward your best.';
+  }else if(id==='lights'){
+    var r1=ok.map(function(r){ return r.rt; }); primary=median(r1); valid=ok.length/n>=.8;
+    lines.push(['Accuracy', pct(ok.length,n)]);
+    if(r1.length) lines.push(['Fastest', Math.round(Math.min.apply(null,r1))+' ms']);
+    lines.push(['Time allowed at the end', Math.round(out.window)+' ms']);
+  }else if(id==='stop'){
+    var go=R.filter(function(r){ return r.kind==='go'; }), ng=R.filter(function(r){ return r.kind==='nogo'; });
+    var r2=go.filter(function(r){ return r.ok; }).map(function(r){ return r.rt; }); primary=median(r2); valid=ok.length/n>=.8;
+    lines.push(['Yellow pads hit', go.filter(function(r){ return r.ok; }).length+' of '+go.length]);
+    lines.push(['Red pads tapped by mistake', ng.filter(function(r){ return !r.ok; }).length+' of '+ng.length]);
+    lines.push(['Accuracy', pct(ok.length,n)]);
+  }else if(id==='switch'){
+    var r3=ok.map(function(r){ return r.rt; }); primary=median(r3); valid=ok.length/n>=.8;
+    var pro=median(ok.filter(function(r){ return !r.anti; }).map(function(r){ return r.rt; }));
+    var anti=median(ok.filter(function(r){ return r.anti; }).map(function(r){ return r.rt; }));
+    lines.push(['Accuracy', pct(ok.length,n)]);
+    if(pro!=null) lines.push(['Solid arrows', Math.round(pro)+' ms']);
+    if(anti!=null) lines.push(['Hollow arrows', Math.round(anti)+' ms']);
+    if(pro!=null && anti!=null) lines.push(['Cost of the flipped rule', (anti-pro>=0?'+':'')+Math.round(anti-pro)+' ms']);
+  }else{
+    var errs=ok.map(function(r){ return r.err; }); primary=median(errs.map(Math.abs)); valid=errs.length>=8;
+    if(errs.length){
+      var bias=errs.reduce(function(a,b){ return a+b; },0)/errs.length;
+      lines.push(['Tendency', Math.abs(bias)<10 ? 'Centred' : Math.round(Math.abs(bias))+' ms '+(bias<0?'early':'late')]);
+    }
+    lines.push(['Taps made', errs.length+' of '+n]);
+    lines.push(id==='strobe' ? ['Glimpse length at the end', Math.round(out.vis)+' ms'] : ['Flight you got to see', Math.round(out.vis*100)+'%']);
+    why='Fewer than eight taps, so this run does not count toward your best.';
+  }
+  if(!why) why='Accuracy was under 80%, so this run does not count toward your best. Slow down until it is clean, then push.';
+  var singles = TIMING[id] ? ok.map(function(r){ return Math.abs(r.err); })
+                               : ok.filter(function(r){ return r.rt!=null; }).map(function(r){ return r.rt; });
+  var fast = singles.length ? Math.min.apply(null,singles) : null;
+  return { primary:primary, fast:fast, lines:lines, valid:valid && primary!=null, why:why };
+}
+
+function spark(vals){
+  if(vals.length<2) return '';
+  var w=150,h=34,p=4, mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), sp=(mx-mn)||1;
+  var pts=vals.map(function(v,i){ return (p+i*(w-2*p)/(vals.length-1)).toFixed(1)+','+(p+(h-2*p)*(1-(v-mn)/sp)).toFixed(1); });
+  var lastPt=pts[pts.length-1].split(',');
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true"><polyline points="'+pts.join(' ')+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="'+lastPt[0]+'" cy="'+lastPt[1]+'" r="3.5" fill="#E3F03A"/></svg>Your last '+vals.length+' counted runs. Lower is better.';
+}
+
+function finish(d,out){
+  var s=summarize(d.id,out), prev=DATA.best[d.id], isBest=false;
+  var recent=(DATA.log[d.id]||[]).slice(-5).map(function(r){ return r.a; });
+  if(s.valid && recent.length>=3){
+    var diff=Math.round(s.primary - recent.reduce(function(a,b){ return a+b; },0)/recent.length);
+    s.lines.unshift(['Against your last '+recent.length+' runs', diff===0 ? 'Level' : Math.abs(diff)+' ms '+(diff<0 ? (TIMING[d.id]?'tighter':'faster') : (TIMING[d.id]?'looser':'slower'))]);
+  }
+  var stampNow=Date.now(), dk=dayStart(stampNow);
+  DATA.days[dk]=(DATA.days[dk]||0)+1; DATA.last[d.id]=stampNow;
+  var lvl = out.window!=null ? out.window : out.vis;
+  if(typeof lvl==='number' && isFinite(lvl)) DATA.lvl[d.id]=lvl;
+  save();
+  if(s.valid){
+    var v=Math.round(s.primary);
+    if(prev==null || v<prev){ DATA.best[d.id]=v; isBest = prev!=null; }
+    var h=DATA.hist[d.id]||[]; h.push(v); DATA.hist[d.id]=h.slice(-12);
+    var lg=DATA.log[d.id]||[]; lg.push({ t:Date.now(), a:v, b:Math.round(s.fast) }); DATA.log[d.id]=lg.slice(-600);
+    save();
+  }
+  session.push({ id:d.id, value:s.primary, valid:s.valid, score:S.score, isBest:isBest });
+  $('#resName').textContent=d.name+', '+S.score+' points';
+  $('#resFigure').innerHTML = s.primary!=null ? ((TIMING[d.id]?'\u00B1':'')+Math.round(s.primary)+'<small>ms</small>') : 'No time';
+  var bestBox=$('#resBest'); bestBox.innerHTML='';
+  var el=document.createElement('p');
+  if(isBest){ el.className='tag'; el.textContent='New best, was '+fmt(d.id,prev); sfx('best'); }
+  else if(s.valid && prev==null){ el.className='best-line'; el.textContent='First counted run. This is your number to beat.'; }
+  else if(prev!=null){ el.className='best-line'; el.textContent='Your best is '+fmt(d.id,prev)+'.'; }
+  bestBox.appendChild(el);
+  var ul=$('#resStats'); ul.innerHTML='';
+  s.lines.forEach(function(l){ var li=document.createElement('li'); var a=document.createElement('span'), b=document.createElement('b'); a.textContent=l[0]; b.textContent=l[1]; li.appendChild(a); li.appendChild(b); ul.appendChild(li); });
+  $('#resNote').textContent = s.valid ? '' : s.why;
+  $('#resSpark').innerHTML = spark(DATA.hist[d.id]||[]);
+  var lastOne = pos>=queue.length-1;
+  $('#resNext').textContent = circuit ? (lastOne ? 'See the whole circuit' : 'Next drill: '+byId[queue[pos+1]].name) : 'Back to drills';
+  $('#resAgain').hidden = circuit;
+  show('result');
+}
+
+function showSummary(){
+  var total=session.reduce(function(a,r){ return a+r.score; },0);
+  $('#sumScore').innerHTML=total+'<small>pts</small>';
+  var ul=$('#sumStats'); ul.innerHTML='';
+  session.forEach(function(r){
+    var li=document.createElement('li'), a=document.createElement('span'), b=document.createElement('b');
+    a.textContent=byId[r.id].name + (r.isBest ? ' (new best)' : (r.valid ? '' : ' (not counted)'));
+    b.textContent = r.value!=null ? fmt(r.id,r.value) : 'No time';
+    li.appendChild(a); li.appendChild(b); ul.appendChild(li);
+  });
+  show('summary');
+}
+
+/* ---------- progress charts ---------- */
+var DAY=86400000, PROG={ id:'lights', range:'7' };
+function dayStart(t){ var d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+function dayLabel(t){ return new Date(t).toLocaleDateString(undefined,{ month:'short', day:'numeric' }); }
+function linreg(pts){
+  var n=pts.length, sx=0, sy=0, sxx=0, sxy=0;
+  pts.forEach(function(p){ sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; });
+  var den=n*sxx-sx*sx; if(n<2 || !den) return null;
+  var m=(n*sxy-sx*sy)/den; return { m:m, b:(sy-m*sx)/n };
+}
+/* key 'a' = run median, averaged by day; key 'b' = fastest single trial, best of the day */
+function series(id, range, key){
+  var log=DATA.log[id]||[], today=dayStart(Date.now());
+  var first = range==='7' ? dayStart(today-6*DAY+DAY/2) : (log.length ? dayStart(log[0].t) : today);
+  var nDays=Math.round((today-first)/DAY)+1, runs=[], bucket={};
+  log.forEach(function(r){
+    if(r[key]==null || isNaN(r[key])) return;
+    var ds=dayStart(r.t), i=Math.round((ds-first)/DAY); if(i<0 || i>=nDays) return;
+    runs.push({ x:i+((r.t-ds)/DAY-.5)*.5, y:r[key] });
+    (bucket[i]=bucket[i]||[]).push(r[key]);
+  });
+  var days=Object.keys(bucket).map(Number).sort(function(a,b){ return a-b; }).map(function(i){
+    var v=bucket[i];
+    return { x:i, y: key==='a' ? v.reduce(function(p,q){ return p+q; },0)/v.length : Math.min.apply(null,v) };
+  });
+  return { runs:runs, days:days, nDays:nDays, first:first, fit:linreg(days) };
+}
+function chartSVG(s, color, gid, range){
+  var W=340, H=190, L=36, R=14, T=12, B=26, pw=W-L-R, ph=H-T-B;
+  var ys=s.runs.map(function(r){ return r.y; }).concat(s.days.map(function(d){ return d.y; }));
+  var lo=Math.min.apply(null,ys), hi=Math.max.apply(null,ys), padY=Math.max(12,(hi-lo)*.18);
+  lo=Math.max(0,lo-padY); hi=hi+padY;
+  var X=function(i){ return s.nDays<=1 ? L+pw/2 : L+(i/(s.nDays-1))*pw; };
+  var Y=function(v){ return T+ph*(1-(v-lo)/(hi-lo)); };
+  var f=function(n){ return n.toFixed(1); };
+  var o='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Chart of results by day">';
+  o+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+color+'" stop-opacity=".30"/><stop offset="1" stop-color="'+color+'" stop-opacity="0"/></linearGradient></defs>';
+  [0,.5,1].forEach(function(k){
+    var v=lo+(hi-lo)*k, y=Y(v);
+    o+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+f(y)+'" y2="'+f(y)+'"/><text x="'+(L-6)+'" y="'+f(y+4)+'" text-anchor="end">'+Math.round(v)+'</text>';
+  });
+  if(range==='7'){
+    for(var i=0;i<s.nDays;i++){
+      var lab = i===s.nDays-1 ? 'Today' : new Date(s.first+i*DAY+DAY/2).toLocaleDateString(undefined,{ weekday:'short' });
+      o+='<text x="'+f(X(i))+'" y="'+(H-6)+'" text-anchor="'+(i===s.nDays-1?'end':'middle')+'"'+(i===s.nDays-1?' dx="10"':'')+'>'+lab+'</text>';
+    }
+  }else if(s.nDays<=1){
+    o+='<text x="'+f(X(0))+'" y="'+(H-6)+'" text-anchor="middle">Today</text>';
+  }else{
+    o+='<text x="'+L+'" y="'+(H-6)+'" text-anchor="start">'+dayLabel(s.first)+'</text><text x="'+(W-R)+'" y="'+(H-6)+'" text-anchor="end">Today</text>';
+  }
+  s.runs.forEach(function(r){ o+='<circle class="run" cx="'+f(X(r.x))+'" cy="'+f(Y(r.y))+'" r="2.4"/>'; });
+  var pts=s.days.map(function(d){ return f(X(d.x))+','+f(Y(d.y)); });
+  if(pts.length>1){
+    var x0=f(X(s.days[0].x)), x1=f(X(s.days[s.days.length-1].x)), base=f(T+ph);
+    o+='<path d="M'+x0+','+base+' L'+pts.join(' L')+' L'+x1+','+base+' Z" fill="url(#'+gid+')"/>';
+    o+='<polyline class="ln" stroke="'+color+'" points="'+pts.join(' ')+'"/>';
+  }
+  if(s.fit){
+    var a=s.days[0].x, b=s.days[s.days.length-1].x;
+    var clampY=function(v){ return Math.max(lo,Math.min(hi,v)); };
+    o+='<line class="tr" x1="'+f(X(a))+'" y1="'+f(Y(clampY(s.fit.m*a+s.fit.b)))+'" x2="'+f(X(b))+'" y2="'+f(Y(clampY(s.fit.m*b+s.fit.b)))+'"/>';
+  }
+  s.days.forEach(function(d,i){
+    var last=i===s.days.length-1;
+    o+= last ? '<circle class="now" cx="'+f(X(d.x))+'" cy="'+f(Y(d.y))+'" r="6"/>'
+             : '<circle cx="'+f(X(d.x))+'" cy="'+f(Y(d.y))+'" r="3.6" fill="'+color+'"/>';
+  });
+  return o+'</svg>';
+}
+function trendHTML(s){
+  if(!s.fit) return '<p class="trend">The trend line appears once you have runs on two different days.</p>';
+  var m=s.fit.m, n=s.days.length, txt, cls='';
+  if(Math.abs(m)<.5){ txt='Flat'; }
+  else{ txt=(Math.abs(m)<10 ? Math.abs(m).toFixed(1) : Math.round(Math.abs(m)))+' ms '+(m<0?'faster':'slower'); if(m<0) cls=' class="up"'; }
+  return '<p class="trend"><b'+cls+'>'+txt+'</b>'+(txt==='Flat'?'trend':'per day, trend')+' across '+n+' days</p>';
+}
+function cardHTML(title, cap, value, s, id, color, gid){
+  var pre = TIMING[id] ? '\u00B1' : '';
+  return '<section class="card"><div class="card-top"><div><h3>'+title+'</h3><p class="val">'+pre+Math.round(value)+'<small>ms</small></p><p class="cap">'+cap+'</p></div>'+trendHTML(s)+'</div>'+
+    chartSVG(s,color,gid,PROG.range)+
+    '<div class="legend"><span><i style="border-color:'+color+'"></i>Each day</span><span><i class="t"></i>Trend</span><span><i class="d"></i>Single runs</span></div></section>';
+}
+function renderProgress(){
+  var chips=$('#progChips'); chips.innerHTML='';
+  DRILLS.forEach(function(d){
+    var b=document.createElement('button'); b.className='chip'; b.textContent=d.name;
+    b.setAttribute('aria-pressed', String(d.id===PROG.id));
+    b.addEventListener('click', function(){ PROG.id=d.id; renderProgress(); });
+    chips.appendChild(b);
+  });
+  $('#r7').setAttribute('aria-pressed', String(PROG.range==='7'));
+  $('#rAll').setAttribute('aria-pressed', String(PROG.range==='all'));
+  var d=byId[PROG.id], A=series(d.id,PROG.range,'a'), Bs=series(d.id,PROG.range,'b');
+  var box=$('#progCards'), span = PROG.range==='7' ? 'in the past 7 days' : 'so far';
+  if(!A.days.length){
+    $('#progCount').textContent='';
+    box.innerHTML='<section class="card"><div class="empty"><p>No counted runs of '+d.name+' '+span+'. Play it once with 80% accuracy or better and your first point lands here.</p><button class="btn" id="progPlay">Play '+d.name+'</button></div></section>';
+    $('#progPlay').addEventListener('click', function(){ audio(); startQueue([d.id], false); });
+    return;
+  }
+  $('#progCount').textContent=A.runs.length+' counted '+(A.runs.length===1?'run':'runs')+' on '+A.days.length+' '+(A.days.length===1?'day':'days')+' '+span+'. Down is faster.';
+  var latest=A.days[A.days.length-1].y;
+  var best=Math.min.apply(null,Bs.days.map(function(p){ return p.y; }));
+  var isInt=!!TIMING[d.id];
+  box.innerHTML =
+    cardHTML(isInt?'Average timing error':'Average reaction time', 'Latest day. Each run counts by its median.', latest, A, d.id, '#FFFFFF', 'gA') +
+    cardHTML(isInt?'Best single tap':'Best time', isInt?'Smallest error '+span+'.':'Fastest correct tap '+span+'.', best, Bs, d.id, '#8BE6FF', 'gB');
+}
+
+/* ---------- wiring ---------- */
+$('#openProgress').addEventListener('click', function(){ renderProgress(); show('progress'); });
+$('#progBack').addEventListener('click', function(){ renderHome(); show('home'); });
+$('#r7').addEventListener('click', function(){ PROG.range='7'; renderProgress(); });
+$('#rAll').addEventListener('click', function(){ PROG.range='all'; renderProgress(); });
+$('#startCircuit').addEventListener('click', function(){ audio(); startQueue(allIds(), true, 'circuit'); });
+$('#startQuick').addEventListener('click', function(){ audio(); startQueue(quickIds(), true, 'quick'); });
+$('#introGo').addEventListener('click', function(){ audio(); play(); });
+$('#introBack').addEventListener('click', function(){ renderHome(); show('home'); });
+$('#quit').addEventListener('click', function(){ stopRun(); renderHome(); show('home'); });
+$('#resNext').addEventListener('click', function(){
+  if(!circuit){ renderHome(); show('home'); return; }
+  if(pos>=queue.length-1){ showSummary(); return; }
+  pos++; showIntro();
+});
+$('#resAgain').addEventListener('click', function(){ play(); });
+$('#sumAgain').addEventListener('click', function(){ startQueue(mode==='quick' ? quickIds() : allIds(), true, mode); });
+$('#sumHome').addEventListener('click', function(){ renderHome(); show('home'); });
+$('#mute').addEventListener('click', function(){ DATA.mute=!DATA.mute; save(); renderHome(); if(!DATA.mute) sfx('good'); });
+var why=$('#why');
+$('#openWhy').addEventListener('click', function(){ if(why.showModal) why.showModal(); else why.setAttribute('open',''); });
+$('#closeWhy').addEventListener('click', function(){ if(why.close) why.close(); else why.removeAttribute('open'); });
+/* backup, restore, erase */
+var sheet=$('#dataSheet'), dataText=$('#dataText'), dataMsg=$('#dataMsg'), eraseArmed=false;
+$('#openData').addEventListener('click', function(){
+  dataText.value=JSON.stringify(DATA); dataMsg.textContent=''; eraseArmed=false; $('#dataErase').textContent='Erase all scores';
+  if(sheet.showModal) sheet.showModal(); else sheet.setAttribute('open','');
+});
+$('#dataClose').addEventListener('click', function(){ if(sheet.close) sheet.close(); else sheet.removeAttribute('open'); renderHome(); });
+$('#dataCopy').addEventListener('click', function(){
+  var manual=function(){ dataText.focus(); dataText.select(); var ok=false; try{ ok=document.execCommand('copy'); }catch(e){} dataMsg.textContent = ok ? 'Backup copied. Paste it into a note to keep it.' : 'Copying is blocked here. The text is selected, so copy it by hand.'; };
+  dataText.value=JSON.stringify(DATA);
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(dataText.value).then(function(){ dataMsg.textContent='Backup copied. Paste it into a note to keep it.'; }, manual); }
+  else manual();
+});
+$('#dataRestore').addEventListener('click', function(){
+  var parsed=null; try{ parsed=JSON.parse(dataText.value); }catch(e){}
+  if(!parsed || typeof parsed!=='object' || !parsed.log || !parsed.best){ dataMsg.textContent='That text is not a Snap backup. Paste the whole backup and try again.'; return; }
+  applyData(parsed); save(); renderHome(); dataMsg.textContent='Backup restored.';
+});
+$('#dataErase').addEventListener('click', function(){
+  if(!eraseArmed){ eraseArmed=true; this.textContent='Tap again to erase everything'; return; }
+  applyData({}); save(); renderHome(); dataText.value=JSON.stringify(DATA); eraseArmed=false; this.textContent='Erase all scores'; dataMsg.textContent='All scores erased.';
+});
+document.addEventListener('visibilitychange', function(){ if(document.hidden && !$('#play').hidden){ stopRun(); renderHome(); show('home'); } });
+
+renderHome();
+})();
+</script>
+</body>
+</html>
