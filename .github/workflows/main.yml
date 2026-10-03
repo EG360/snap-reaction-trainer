@@ -11,12 +11,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Dependencies
         run: |
           npm install
           npm run build
+          npx cap ios add || true
           npx cap sync ios
 
       - name: Build Xcode Project
