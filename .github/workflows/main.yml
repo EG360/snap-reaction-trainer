@@ -46,17 +46,17 @@ jobs:
           PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
           echo "Found active project target name: $PROJECT_NAME"
           
-          # Copilot Deeper Cache Fix: Completely clear all Xcode caches and derived data tracking layers
+          # Clear Xcode caches
           rm -rf ~/Library/Developer/Xcode/DerivedData
           rm -rf ~/Library/Caches/com.apple.dt.Xcode
           
-          # Direct compilation targeted for devices that completely bypasses code signing and team verification blocks
-          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
+          # Force build output into the local build folder
+          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build -derivedDataPath build
           
-          # Copilot Output Verification Step: Verify build output exists before moving forward
-          if [ ! -d "build/Debug-iphoneos/$PROJECT_NAME.app" ]; then
+          # Verify build output exists in the new explicit path
+          if [ ! -d "build/Build/Products/Debug-iphoneos/$PROJECT_NAME.app" ]; then
             echo "Error: Build failed - no .app bundle found at expected location"
-            ls -la build/Debug-iphoneos/ || echo "Debug-iphoneos directory doesn't exist"
+            ls -la build/Build/Products/Debug-iphoneos/ || echo "Debug-iphoneos directory doesn't exist"
             exit 1
           fi
 
@@ -68,8 +68,8 @@ jobs:
           PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
           cd ../../..
           
-          # Move the dynamically named native application container bundle into the deployment package
-          cp -r myApp/platforms/ios/build/Debug-iphoneos/"$PROJECT_NAME.app" Payload/
+          # Copy the compiled app from the newly corrected DerivedData output path
+          cp -r myApp/platforms/ios/build/Build/Products/Debug-iphoneos/"$PROJECT_NAME.app" Payload/
           zip -r SnapTrainer.ipa Payload
 
       - name: Deliver Finished IPA File Archive
