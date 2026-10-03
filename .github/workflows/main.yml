@@ -24,24 +24,47 @@ jobs:
           rm -rf www/*
           cp ../index.html www/
           cordova prepare ios
+          
+          # Copilot Verification Step 1: Confirm Cordova built the platform folder layout
+          echo "=== Verifying Generated Cordova Platforms Directory ==="
+          ls -la platforms/ios/
 
       - name: Compile App via Direct Architecture Build
         run: |
           cd myApp/platforms/ios
+          
+          # Copilot Verification Step 2: List current contents to trace what project name was used
+          echo "=== Debugging Workspace Directory Trees ==="
+          ls -la
+          
+          # Dynamically detect whatever xcodeproj file Cordova actually generated (e.g. App.xcodeproj or SnapTrainer.xcodeproj)
+          PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
+          
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "Error: No Xcode project folder (.xcodeproj) found in myApp/platforms/ios!"
+            ls -la ../../
+            exit 1
+          fi
+          
+          PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
+          echo "Found active project target name: $PROJECT_NAME"
+          
           # Clear out Xcode caches to isolate compilation components perfectly
           rm -rf ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
           
           # Direct compilation targeted for devices that completely bypasses code signing and team verification blocks
-          xcodebuild -project "SnapTrainer.xcodeproj" -scheme "SnapTrainer" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
+          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
 
       - name: Package App Bundle into Free IPA Archive
         run: |
           mkdir -p Payload
+          cd myApp/platforms/ios
+          PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
+          PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
+          cd ../../..
           
-          # Locate the cleanly generated app binary folder from the default build output path
-          cp -r myApp/platforms/ios/build/Debug-iphoneos/"SnapTrainer.app" Payload/
-          
-          # Compress folder payload structure directly into the target .ipa file
+          # Move the dynamically named native application container bundle into the deployment package
+          cp -r myApp/platforms/ios/build/Debug-iphoneos/"$PROJECT_NAME.app" Payload/
           zip -r SnapTrainer.ipa Payload
 
       - name: Deliver Finished IPA File Archive
