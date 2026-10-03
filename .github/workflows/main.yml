@@ -16,33 +16,32 @@ jobs:
       - name: Install Cordova globally
         run: npm install -g cordova
 
-      - name: Create Cordova App Shell
+      - name: Initialize Project Context Shell
         run: |
           cordova create myApp com.vibe.snaptrainer "SnapTrainer"
           cd myApp
           cordova platform add ios
           rm -rf www/*
           cp ../index.html www/
+          cp ../build.json ./
           cordova prepare ios
 
-      - name: Compile Native iOS Application
+      - name: Compile and Export Native iOS IPA Archive
         run: |
-          cd myApp/platforms/ios
-          # Automatically find the generated project name
-          PROJECT_NAME=$(ls -d *.xcodeproj | sed 's/\.xcodeproj//')
-          echo "Building project: $PROJECT_NAME"
-          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
-
-      - name: Package App Bundle into IPA Archive
-        run: |
+          cd myApp
+          # Clear old Xcode caches to prevent module collision loops
+          rm -rf ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
+          
+          # Run the official Cordova device compiler command
+          cordova build ios --device --debug --buildConfig=build.json
+          
+          # Bundle the cleanly packaged app artifact
+          cd platforms/ios/build/device
           mkdir -p Payload
-          cd myApp/platforms/ios
-          PROJECT_NAME=$(ls -d *.xcodeproj | sed 's/\.xcodeproj//')
-          cd ../../..
-          cp -r myApp/platforms/ios/build/Debug-iphoneos/"$PROJECT_NAME.app" Payload/
-          zip -r SnapTrainer.ipa Payload
+          cp -r *.app Payload/
+          zip -r ../../../../SnapTrainer.ipa Payload
 
-      - name: Deliver Finished IPA File
+      - name: Deliver Finished IPA File Archive
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-ipa
