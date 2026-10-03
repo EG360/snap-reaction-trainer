@@ -25,7 +25,6 @@ jobs:
           cp ../index.html www/
           cordova prepare ios
           
-          # Copilot Verification Step 1: Confirm Cordova built the platform folder layout
           echo "=== Verifying Generated Cordova Platforms Directory ==="
           ls -la platforms/ios/
 
@@ -33,11 +32,9 @@ jobs:
         run: |
           cd myApp/platforms/ios
           
-          # Copilot Verification Step 2: List current contents to trace what project name was used
           echo "=== Debugging Workspace Directory Trees ==="
           ls -la
           
-          # Dynamically detect whatever xcodeproj file Cordova actually generated (e.g. App.xcodeproj or SnapTrainer.xcodeproj)
           PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
           
           if [ -z "$PROJECT_FILE" ]; then
@@ -49,11 +46,19 @@ jobs:
           PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
           echo "Found active project target name: $PROJECT_NAME"
           
-          # Clear out Xcode caches to isolate compilation components perfectly
-          rm -rf ~/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
+          # Copilot Deeper Cache Fix: Completely clear all Xcode caches and derived data tracking layers
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf ~/Library/Caches/com.apple.dt.Xcode
           
           # Direct compilation targeted for devices that completely bypasses code signing and team verification blocks
           xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build
+          
+          # Copilot Output Verification Step: Verify build output exists before moving forward
+          if [ ! -d "build/Debug-iphoneos/$PROJECT_NAME.app" ]; then
+            echo "Error: Build failed - no .app bundle found at expected location"
+            ls -la build/Debug-iphoneos/ || echo "Debug-iphoneos directory doesn't exist"
+            exit 1
+          fi
 
       - name: Package App Bundle into Free IPA Archive
         run: |
