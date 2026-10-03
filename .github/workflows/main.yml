@@ -53,12 +53,17 @@ jobs:
           # Force build output into the local build folder
           xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build -derivedDataPath build
           
-          # Verify build output exists in the new explicit path
+          # Copilot Diagnostic Check: Find exactly where the .app bundle is hiding
           if [ ! -d "build/Build/Products/Debug-iphoneos/$PROJECT_NAME.app" ]; then
             echo "Error: Build failed - no .app bundle found at expected location"
-            ls -la build/Build/Products/Debug-iphoneos/ || echo "Debug-iphoneos directory doesn't exist"
+            echo "Contents of build/Build/Products/Debug-iphoneos/:"
+            ls -la build/Build/Products/Debug-iphoneos/ 2>/dev/null || echo "Debug-iphoneos directory doesn't exist"
+            echo "Full directory tree scan for app bundles:"
+            find build -type d -name "*.app" 2>/dev/null || echo "No .app bundles found"
             exit 1
           fi
+          
+          echo "✓ Build verification passed: $PROJECT_NAME.app found"
 
       - name: Package App Bundle into Free IPA Archive
         run: |
@@ -68,8 +73,11 @@ jobs:
           PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
           cd ../../..
           
-          # Copy the compiled app from the newly corrected DerivedData output path
-          cp -r myApp/platforms/ios/build/Build/Products/Debug-iphoneos/"$PROJECT_NAME.app" Payload/
+          # Find the actual path dynamically to prevent copy errors
+          REAL_APP_PATH=$(find myApp/platforms/ios/build -type d -name "$PROJECT_NAME.app" | head -n 1)
+          echo "Copying app from: $REAL_APP_PATH"
+          
+          cp -r "$REAL_APP_PATH" Payload/
           zip -r SnapTrainer.ipa Payload
 
       - name: Deliver Finished IPA File Archive
