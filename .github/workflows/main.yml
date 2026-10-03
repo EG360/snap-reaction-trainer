@@ -1,87 +1,40 @@
-name: Build iOS IPA
-on: [workflow_dispatch]
-
-jobs:
-  build:
-    runs-on: macos-14
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install Cordova globally
-        run: npm install -g cordova
-
-      - name: Initialize Project Context Shell
-        run: |
-          cordova create myApp com.vibe.snaptrainer "SnapTrainer"
-          cd myApp
-          cordova platform add ios
-          rm -rf www/*
-          cp ../index.html www/
-          cordova prepare ios
-          
-          echo "=== Verifying Generated Cordova Platforms Directory ==="
-          ls -la platforms/ios/
-
-      - name: Compile App via Direct Architecture Build
-        run: |
-          cd myApp/platforms/ios
-          
-          echo "=== Debugging Workspace Directory Trees ==="
-          ls -la
-          
-          PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
-          
-          if [ -z "$PROJECT_FILE" ]; then
-            echo "Error: No Xcode project folder (.xcodeproj) found in myApp/platforms/ios!"
-            ls -la ../../
-            exit 1
-          fi
-          
-          PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
-          echo "Found active project target name: $PROJECT_NAME"
-          
-          # Clear Xcode caches
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          rm -rf ~/Library/Caches/com.apple.dt.Xcode
-          
-          # Force build output into the local build folder
-          xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build -derivedDataPath build
-          
-          # Copilot Diagnostic Check: Find exactly where the .app bundle is hiding
-          if [ ! -d "build/Build/Products/Debug-iphoneos/$PROJECT_NAME.app" ]; then
-            echo "Error: Build failed - no .app bundle found at expected location"
-            echo "Contents of build/Build/Products/Debug-iphoneos/:"
-            ls -la build/Build/Products/Debug-iphoneos/ 2>/dev/null || echo "Debug-iphoneos directory doesn't exist"
-            echo "Full directory tree scan for app bundles:"
-            find build -type d -name "*.app" 2>/dev/null || echo "No .app bundles found"
-            exit 1
-          fi
-          
-          echo "✓ Build verification passed: $PROJECT_NAME.app found"
-
-      - name: Package App Bundle into Free IPA Archive
-        run: |
-          mkdir -p Payload
-          cd myApp/platforms/ios
-          PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
-          PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
-          cd ../../..
-          
-          # Find the actual path dynamically to prevent copy errors
-          REAL_APP_PATH=$(find myApp/platforms/ios/build -type d -name "$PROJECT_NAME.app" | head -n 1)
-          echo "Copying app from: $REAL_APP_PATH"
-          
-          cp -r "$REAL_APP_PATH" Payload/
-          zip -r SnapTrainer.ipa Payload
-
-      - name: Deliver Finished IPA File Archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-app-ipa
-          path: SnapTrainer.ipa
+- name: Compile App via Direct Architecture Build
+  run: |
+    cd myApp/platforms/ios
+    
+    echo "=== Debugging Workspace Directory Trees ==="
+    ls -la
+    
+    PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
+    
+    if [ -z "$PROJECT_FILE" ]; then
+      echo "Error: No Xcode project folder (.xcodeproj) found in myApp/platforms/ios!"
+      ls -la ../../
+      exit 1
+    fi
+    
+    PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
+    echo "Found active project target name: $PROJECT_NAME"
+    
+    # Clear Xcode caches
+    rm -rf ~/Library/Developer/Xcode/DerivedData
+    rm -rf ~/Library/Caches/com.apple.dt.Xcode
+    
+    # Force build output into the local build folder
+    xcodebuild -project "$PROJECT_NAME.xcodeproj" -scheme "$PROJECT_NAME" -sdk iphoneos -configuration Debug CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO clean build -derivedDataPath build
+    
+    # Copilot Diagnostic Check: Find exactly where the .app bundle is hiding
+    # Re-extract PROJECT_NAME to ensure it's available after the build
+    PROJECT_FILE=$(ls -d *.xcodeproj 2>/dev/null | head -n 1)
+    PROJECT_NAME=$(echo "$PROJECT_FILE" | sed 's/\.xcodeproj//')
+    
+    if [ ! -d "build/Build/Products/Debug-iphoneos/$PROJECT_NAME.app" ]; then
+      echo "Error: Build failed - no .app bundle found at expected location"
+      echo "Contents of build/Build/Products/Debug-iphoneos/:"
+      ls -la build/Build/Products/Debug-iphoneos/ 2>/dev/null || echo "Debug-iphoneos directory doesn't exist"
+      echo "Full directory tree scan for app bundles:"
+      find build -type d -name "*.app" 2>/dev/null || echo "No .app bundles found"
+      exit 1
+    fi
+    
+    echo "✓ Build verification passed: $PROJECT_NAME.app found"
